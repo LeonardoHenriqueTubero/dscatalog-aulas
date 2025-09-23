@@ -1,6 +1,7 @@
 package br.com.leonardo.dscatalog.controller;
 
 import br.com.leonardo.dscatalog.dto.ProductDTO;
+import br.com.leonardo.dscatalog.projections.ProductProjection;
 import br.com.leonardo.dscatalog.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +26,11 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProductDTO>> findAll(Pageable pageable) {
-        Page<ProductDTO> list = service.findAll(pageable);
+    public ResponseEntity<Page<ProductProjection>> findAll(
+            @RequestParam(value = "name", defaultValue = "") String name,
+            @RequestParam(value = "categoryId", defaultValue = "0") String categoryId,
+            Pageable pageable) {
+        Page<ProductProjection> list = service.findAllPaged(name, categoryId, pageable);
         return ResponseEntity.ok(list);
     }
 

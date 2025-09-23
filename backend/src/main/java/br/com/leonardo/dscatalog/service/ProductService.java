@@ -4,6 +4,7 @@ import br.com.leonardo.dscatalog.dto.CategoryDTO;
 import br.com.leonardo.dscatalog.dto.ProductDTO;
 import br.com.leonardo.dscatalog.entities.Category;
 import br.com.leonardo.dscatalog.entities.Product;
+import br.com.leonardo.dscatalog.projections.ProductProjection;
 import br.com.leonardo.dscatalog.repositories.CategoryRepository;
 import br.com.leonardo.dscatalog.repositories.ProductRepository;
 import br.com.leonardo.dscatalog.service.exceptions.DatabaseException;
@@ -16,6 +17,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 public class ProductService {
@@ -90,5 +94,15 @@ public class ProductService {
             Category category = categoryRepository.getReferenceById(categoryDTO.getId());
             entity.getCategories().add(category);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductProjection> findAllPaged(String name, String categoryId, Pageable pageable) {
+
+        List<Long> categoryIds = List.of();
+        if (!categoryId.equals("0")) {
+            categoryIds = Arrays.stream(categoryId.split(",")).map(Long::parseLong).toList();
+        }
+        return repository.searchProducts(categoryIds, name, pageable);
     }
 }
