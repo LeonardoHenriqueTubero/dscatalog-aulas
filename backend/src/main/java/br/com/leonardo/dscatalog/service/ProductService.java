@@ -9,10 +9,12 @@ import br.com.leonardo.dscatalog.repositories.CategoryRepository;
 import br.com.leonardo.dscatalog.repositories.ProductRepository;
 import br.com.leonardo.dscatalog.service.exceptions.DatabaseException;
 import br.com.leonardo.dscatalog.service.exceptions.ResourceNotFoundException;
+import br.com.leonardo.dscatalog.util.Utils;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -83,6 +85,22 @@ public class ProductService {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    @Transactional(readOnly = true)
+    public Page<ProductDTO> findAllPaged(String name, String categoryId, Pageable pageable) {
+        List<Long> categoryIds = List.of();
+        if (!categoryId.equals("0")) {
+            categoryIds = Arrays.stream(categoryId.split(",")).map(Long::parseLong).toList();
+        }
+        Page<ProductProjection> page = repository.searchProducts(categoryIds, name, pageable);
+        List<Long> productIds = page.map(ProductProjection::getId).toList();
+
+        List<Product> entities = repository.searchProductWithCategories(productIds);
+        entities = (List<Product>) Utils.replace(page.getContent(), entities);
+        List<ProductDTO> dtos = entities.stream().map(x -> new ProductDTO(x, x.getCategories())).toList();
+        return new PageImpl<>(dtos, page.getPageable(), page.getTotalPages());
+    }
+
     private void copyDtoToEntity(ProductDTO dto, Product entity) {
         entity.setName(dto.getName());
         entity.setDescription(dto.getDescription());
@@ -94,15 +112,5 @@ public class ProductService {
             Category category = categoryRepository.getReferenceById(categoryDTO.getId());
             entity.getCategories().add(category);
         }
-    }
-
-    @Transactional(readOnly = true)
-    public Page<ProductProjection> findAllPaged(String name, String categoryId, Pageable pageable) {
-
-        List<Long> categoryIds = List.of();
-        if (!categoryId.equals("0")) {
-            categoryIds = Arrays.stream(categoryId.split(",")).map(Long::parseLong).toList();
-        }
-        return repository.searchProducts(categoryIds, name, pageable);
     }
 }
