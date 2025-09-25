@@ -3,6 +3,7 @@ package br.com.leonardo.dscatalog.controller.handlers;
 import br.com.leonardo.dscatalog.dto.StandardError;
 import br.com.leonardo.dscatalog.dto.ValidationError;
 import br.com.leonardo.dscatalog.service.exceptions.DatabaseException;
+import br.com.leonardo.dscatalog.service.exceptions.EmailException;
 import br.com.leonardo.dscatalog.service.exceptions.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -12,8 +13,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import javax.xml.crypto.Data;
-import java.lang.reflect.Field;
 import java.time.Instant;
 
 @ControllerAdvice
@@ -58,6 +57,13 @@ public class ControllerExceptionHandler {
             err.addError(f.getField(), f.getDefaultMessage());
         }
 
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(EmailException.class)
+    public ResponseEntity<StandardError> email(EmailException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        StandardError err = new StandardError(Instant.now(), status.value(), "Email exception", e.getMessage(), request.getRequestURI());
         return ResponseEntity.status(status).body(err);
     }
 }
